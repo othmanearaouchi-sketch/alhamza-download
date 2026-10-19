@@ -1,0 +1,4 @@
+# Netlify Clean Redirects for alHamza Standalone Landing Page
+/privacy        /privacy.html       200
+/terms          /terms.html         200
+/download       /index.html#download-hub  302

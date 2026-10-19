@@ -12,7 +12,7 @@ const APP_DOWNLOAD_CONFIG = {
   fileSize: "72.65 ميغابايت",
   
   // رابط ميديافاير (MediaFire) الرئيسي المباشر - الرابط الرسمي
-  mediafireUrl: "https://www.mediafire.com/file/ojxkw6a6jm0emwe/app-user-release.apk/file"
+  mediafireUrl: "https://www.mediafire.com/file/zskswvqn3llii6t/app-user-release.apk/file"
 };
 
 document.addEventListener('DOMContentLoaded', () => {

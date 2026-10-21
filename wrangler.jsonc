@@ -2,7 +2,24 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "dark-thunder-a3be",
   "compatibility_date": "2025-01-01",
+  "main": "src/worker.mjs",
   "assets": {
-    "directory": "./public"
-  }
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "DOWNLOAD_COUNTER",
+        "class_name": "DownloadCounter"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["DownloadCounter"]
+    }
+  ]
 }

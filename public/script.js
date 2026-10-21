@@ -37,13 +37,56 @@ function initDownloadHandlers() {
   
   // أزرار بدء تحميل ميديافاير
   const mediafireTriggers = document.querySelectorAll('.trigger-mediafire-download');
+  const downloadClickCounter = document.getElementById('downloadClickCounter');
 
   let countdownInterval = null;
 
+  const updateDownloadCounter = (count) => {
+    if (downloadClickCounter && Number.isFinite(count)) {
+      downloadClickCounter.textContent = `إجمالي نقرات التحميل: ${count}`;
+    }
+  };
+
+  const trackDownloadClick = async () => {
+    // يحتفظ المتصفح بعداده الخاص كنسخة احتياطية بسيطة عند انقطاع الشبكة.
+    const localCount = Number.parseInt(localStorage.getItem('download_clicks') || '0', 10) + 1;
+    localStorage.setItem('download_clicks', String(localCount));
+
+    // التوافق مع أي إصدار مستقبلي من Beacon يدعم الأحداث المخصصة.
+    if (window.cloudflareBeacon?.trackEvent) {
+      window.cloudflareBeacon.trackEvent('mediafire_download_click');
+    }
+
+    try {
+      const response = await fetch('/api/track-download', {
+        method: 'POST',
+        keepalive: true
+      });
+      const result = await response.json();
+      if (result.success) updateDownloadCounter(result.total_downloads);
+    } catch {
+      updateDownloadCounter(localCount);
+    }
+  };
+
+  fetch('/api/track-download')
+    .then(response => response.json())
+    .then(result => {
+      if (result.success) updateDownloadCounter(result.total_downloads);
+    })
+    .catch(() => {
+      const localCount = Number.parseInt(localStorage.getItem('download_clicks') || '0', 10);
+      updateDownloadCounter(localCount);
+    });
+
   // فتح نافذة التحميل والبدء التلقائي
-  const startDownloadFlow = (targetUrl, serverName) => {
+  const startDownloadFlow = (targetUrl, serverName, downloadWindow) => {
     if (!downloadModal) {
-      window.open(targetUrl, '_blank');
+      if (downloadWindow) {
+        downloadWindow.location.href = targetUrl;
+      } else {
+        window.open(targetUrl, '_blank');
+      }
       return;
     }
 
@@ -75,7 +118,12 @@ function initDownloadHandlers() {
         if (countdownNumber) countdownNumber.textContent = "✓";
 
         setTimeout(() => {
-          window.location.href = targetUrl;
+          if (downloadWindow) {
+            downloadWindow.location.href = targetUrl;
+          } else {
+            window.location.href = targetUrl;
+          }
+          closeDownloadModal();
         }, 500);
       }
     }, 1000);
@@ -86,9 +134,18 @@ function initDownloadHandlers() {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       const customUrl = btn.getAttribute('data-url') || APP_DOWNLOAD_CONFIG.mediafireUrl;
-      startDownloadFlow(customUrl, "سيرفر MediaFire السريع");
+      const downloadWindow = window.open('about:blank', '_blank');
+      if (downloadWindow) downloadWindow.opener = null;
+      trackDownloadClick();
+      startDownloadFlow(customUrl, "سيرفر MediaFire السريع", downloadWindow);
     });
   });
+
+  if (directLinkBtn) {
+    directLinkBtn.addEventListener('click', () => {
+      trackDownloadClick();
+    });
+  }
 
   // إغلاق المودال
   const closeDownloadModal = () => {
